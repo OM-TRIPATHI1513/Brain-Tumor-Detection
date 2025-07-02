@@ -1,74 +1,50 @@
-import os
+import gradio as gr
 import numpy as np
 from PIL import Image
-import cv2
-import json
+import tensorflow as tf
 import datetime
+import json
+import os
 
-from flask import Flask, request, render_template
-from werkzeug.utils import secure_filename
-from keras.models import load_model
+# Load your trained model
+model = tf.keras.models.load_model('my_model.keras')
+print("✅ Model loaded successfully.")
 
-app = Flask(__name__)
+# Create history.json if not exists
+if not os.path.exists("history.json"):
+    with open("history.json", "w") as f:
+        f.write("")
 
-# Load the trained model
-model = load_model('my_model.keras')
-print('✅ Model loaded. Check http://127.0.0.1:5000/')
-
-# Upload folder
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def getResult(img_path):
-    image = cv2.imread(img_path)
-    if image is None:
-        raise ValueError(f"Could not read image at path: {img_path}")
-
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    img = Image.fromarray(image).resize((64, 64))
+def predict(image: Image.Image):
+    # Preprocess
+    img = image.resize((64, 64))
     img = np.array(img).astype('float32') / 255.0
     input_img = np.expand_dims(img, axis=0)
 
+    # Prediction
     predictions = model.predict(input_img)
     tumor_probability = predictions[0][1] * 100
     binary_result = "Yes" if tumor_probability >= 30 else "No"
 
-    return tumor_probability, binary_result
-
-def save_history(image_name, prediction, probability):
+    # Save result
     record = {
         "timestamp": datetime.datetime.now().isoformat(),
-        "image": image_name,
-        "prediction": prediction,
-        "probability": f"{probability:.2f}%"
+        "prediction": binary_result,
+        "probability": f"{tumor_probability:.2f}%"
     }
-    with open('history.json', 'a') as f:
+    with open("history.json", "a") as f:
         f.write(json.dumps(record) + "\n")
 
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html', result=None)
+    return f"Tumor Probability: {tumor_probability:.2f}%", f"Tumor Presence: {binary_result}"
 
-@app.route('/predict', methods=['POST'])
-def upload():
-    try:
-        f = request.files['file']
-        filename = secure_filename(f.filename)
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
-        f.save(file_path)
+# Gradio UI
+demo = gr.Interface(
+    fn=predict,
+    inputs=gr.Image(type="pil"),
+    outputs=["text", "text"],
+    title="🧠 Brain Tumor Detection",
+    description="Upload a brain MRI image to detect tumor presence. Trained using CNN."
+)
 
-        tumor_probability, binary_result = getResult(file_path)
-        save_history(filename, binary_result, tumor_probability)
-
-        result = (
-            f"The probability of tumor presence is: {tumor_probability:.2f}%<br>"
-            f"Tumor presence: <strong>{binary_result}</strong>"
-        )
-
-        return render_template('index.html', result=result)
-
-    except Exception as e:
-        return render_template('index.html', result=f"Error: {str(e)}")
-
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    demo.launch()
