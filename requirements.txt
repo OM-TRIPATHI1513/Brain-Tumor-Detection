@@ -1,4 +1,6 @@
 Flask
+gunicorn
+tensorflow
 keras
 opencv-python
 numpy
@@ -6,7 +8,3 @@ Pillow
 matplotlib
 seaborn
 scikit-learn
-gradio
-tensorflow
-pillow
-numpy
