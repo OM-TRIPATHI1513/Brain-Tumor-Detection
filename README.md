@@ -125,9 +125,10 @@ App is live at:
 
 🔗 **[https://huggingface.co/spaces/Pt-OM-TRIPATHI/Brain-Tumor-Detection](https://huggingface.co/spaces/Pt-OM-TRIPATHI/Brain-Tumor-Detection)**
 
+![image](https://github.com/user-attachments/assets/7328336f-250c-4011-906c-4299168861d4)
+
 Steps to Deploy Your Own:
 
-![image](https://github.com/user-attachments/assets/7328336f-250c-4011-906c-4299168861d4)
 
 1. Create a new **Space** on [Hugging Face Spaces](https://huggingface.co/spaces)
 2. Set the **type** to `Gradio`
